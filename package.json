@@ -1,0 +1,30 @@
+{
+  "name": "master-app",
+  "version": "1.0.0",
+  "description": "LABOPS Master Dashboard",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "server": "node server.js"
+  },
+  "keywords": [
+    "electron",
+    "labops",
+    "socketio",
+    "monitoring"
+  ],
+  "author": "Sakshi",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
+    "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "electron": "^45.0.0",
+    "electron-reload": "^2.0.0-alpha.1"
+  }
+}

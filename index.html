@@ -1,0 +1,253 @@
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: 'Segoe UI', sans-serif;
+        background: #0f1117;
+        color: #e2e8f0;
+        padding: 24px;
+    }
+
+    h1 {
+        font-size: 22px;
+        letter-spacing: 2px;
+        color: #7dd3fc;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+    }
+
+    /* ── Summary Card ── */
+    .summary-card {
+        background: #1e2130;
+        border: 1px solid #2d3148;
+        border-radius: 10px;
+        padding: 16px 24px;
+        display: inline-block;
+        margin-bottom: 24px;
+    }
+
+    .summary-card h2 {
+        font-size: 13px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .summary-card h3 {
+        font-size: 36px;
+        color: #38bdf8;
+        margin-top: 4px;
+    }
+
+    /* ── Systems Grid ── */
+    #systems {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+
+    .card {
+        background: #1e2130;
+        border: 1px solid #2d3148;
+        border-radius: 10px;
+        padding: 20px;
+        transition: border-color 0.3s, opacity 0.3s;
+    }
+
+    .card h2 {
+        font-size: 15px;
+        color: #7dd3fc;
+        margin-bottom: 12px;
+        border-bottom: 1px solid #2d3148;
+        padding-bottom: 8px;
+        transition: color 0.3s;
+    }
+
+    .card p {
+        font-size: 13px;
+        color: #94a3b8;
+        margin: 6px 0;
+    }
+
+    .card p span {
+        color: #e2e8f0;
+        font-weight: 600;
+    }
+
+    .bar-wrap {
+        background: #2d3148;
+        border-radius: 4px;
+        height: 6px;
+        margin-top: 4px;
+        margin-bottom: 10px;
+        overflow: hidden;
+    }
+
+    .bar {
+        height: 100%;
+        border-radius: 4px;
+        background: linear-gradient(90deg, #38bdf8, #818cf8);
+        transition: width 0.4s ease;
+    }
+
+    /* ── Alerts Section ── */
+    #alerts-section {
+        margin-top: 8px;
+    }
+
+    #alerts-section h2 {
+        font-size: 18px;
+        color: #e2e8f0;
+        margin-bottom: 16px;
+    }
+
+    .alert {
+        background: #1e2130;
+        border-left: 5px solid #ef4444;
+        padding: 14px;
+        margin-bottom: 12px;
+        border-radius: 8px;
+    }
+
+    .alert.warning {
+        border-color: #f59e0b;
+    }
+
+    .alert.critical {
+        border-color: #ef4444;
+    }
+
+    .alert strong {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .alert.warning strong { color: #f59e0b; }
+    .alert.critical strong { color: #ef4444; }
+
+    .alert p {
+        font-size: 13px;
+        color: #94a3b8;
+        margin-top: 4px;
+    }
+</style>
+
+<body>
+
+    <h1>⚡ LAB-OPS Control Center</h1>
+
+    <!-- Connected Systems Count -->
+    <div class="summary-card">
+        <h2>Connected Systems</h2>
+        <h3 id="clientCount">0</h3>
+    </div>
+
+    <!-- PC Cards Grid -->
+    <div id="systems"></div>
+
+    <!-- Alerts Section -->
+    <div id="alerts-section">
+        <h2>🚨 Recent Alerts</h2>
+        <div id="alerts"></div>
+    </div>
+
+    <script>
+
+        console.log("Renderer Started");
+
+        const clientCount  = document.getElementById("clientCount");
+        const systemsDiv   = document.getElementById("systems");
+        const alertsDiv    = document.getElementById("alerts");
+        const systemCards  = {};
+
+        // ── Connected ──
+        window.labops.on("connect", () => {
+            console.log("Dashboard Connected To Server");
+        });
+
+        // ── Client Count ──
+        window.labops.on("clients-update", (clients) => {
+            console.log("CLIENT UPDATE:", clients);
+            clientCount.innerText = clients.length;
+        });
+
+        // ── Live System Data ──
+        window.labops.on("system-data-update", (data) => {
+            console.log("SYSTEM UPDATE:", data);
+
+            const ramPercent = ((data.usedRAM / data.totalRAM) * 100).toFixed(1);
+            const cpuPercent = parseFloat(data.cpuUsage).toFixed(1);
+
+            const cardHTML = `
+                <div class="card" id="card-${data.pcName}">
+                    <h2>🖥 ${data.pcName}</h2>
+                    <p>CPU Usage: <span>${cpuPercent}%</span></p>
+                    <div class="bar-wrap">
+                        <div class="bar" style="width:${cpuPercent}%"></div>
+                    </div>
+                    <p>Total RAM: <span>${data.totalRAM} GB</span></p>
+                    <p>Used RAM: <span>${data.usedRAM} GB</span> (${ramPercent}%)</p>
+                    <div class="bar-wrap">
+                        <div class="bar" style="width:${ramPercent}%"></div>
+                    </div>
+                    <p>Free RAM: <span>${data.freeRAM} GB</span></p>
+                </div>
+            `;
+
+            if (systemCards[data.pcName]) {
+                systemCards[data.pcName].outerHTML = cardHTML;
+                systemCards[data.pcName] = document.getElementById(`card-${data.pcName}`);
+            } else {
+                const tempDiv = document.createElement("div");
+                tempDiv.innerHTML = cardHTML;
+                const newCard = tempDiv.firstElementChild;
+                systemsDiv.appendChild(newCard);
+                systemCards[data.pcName] = newCard;
+            }
+        });
+
+        // ── Online / Offline Status ──
+        window.labops.on("client-status-update", (data) => {
+            const card = document.getElementById(`card-${data.pcName}`);
+            if (!card) return;
+
+            if (data.status === "OFFLINE") {
+                card.style.borderColor = "#ef4444";
+                card.style.opacity     = "0.5";
+                card.querySelector("h2").style.color = "#ef4444";
+            } else {
+                card.style.borderColor = "#2d3148";
+                card.style.opacity     = "1";
+                card.querySelector("h2").style.color = "#7dd3fc";
+            }
+        });
+
+        // ── Alert Engine ──
+        window.labops.on("new-alert", (alert) => {
+            console.log("NEW ALERT:", alert);
+
+            const alertDiv = document.createElement("div");
+            alertDiv.classList.add("alert");
+
+            if (alert.severity === "WARNING")  alertDiv.classList.add("warning");
+            if (alert.severity === "CRITICAL") alertDiv.classList.add("critical");
+
+            alertDiv.innerHTML = `
+                <strong>${alert.severity}</strong>
+                <p>${alert.pcName}</p>
+                <p>${alert.message}</p>
+            `;
+
+            alertsDiv.prepend(alertDiv);
+
+            // Max 10 alerts
+            while (alertsDiv.children.length > 10) {
+                alertsDiv.removeChild(alertsDiv.lastChild);
+            }
+        });
+
+    </script>
+
+</body>
