@@ -1,10 +1,14 @@
+# Dependencies
 node_modules/
+
+# Secrets
 .env
 .env.*
-!.env.example
-*.log
+
+# Local databases
 *.db
 *.sqlite
 *.sqlite3
-dist/
-out/
+
+# Logs
+*.log
